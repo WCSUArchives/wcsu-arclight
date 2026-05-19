@@ -1,0 +1,44 @@
+<% manifest_url = @document['dado_identifier_ssm']&.first %>
+<% action = @document['dado_action_ssm']&.first %>
+
+
+<% if action&.downcase == "embed" && manifest_url.present? %>
+  <div class="mirador-container mb-3" id="mirador-container" style="height: 600px; position: relative; overflow: hidden;"></div>
+<% end %>
+
+
+<%= javascript_include_tag "https://unpkg.com/mirador@4/dist/mirador.min.js" %>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const miradorContainer = document.getElementById('mirador-container');
+    if (!miradorContainer) return;
+
+    const viewer = Mirador.viewer({
+      id: 'mirador-container',
+      windows: [{
+        loadedManifest: '<%= manifest_url %>',
+        canvasIndex: 0
+      }]
+    });
+  });
+</script>
+
+
+<%# Override: Omeka link instead of IIIF %>
+
+<%= tag.div(class: 'al-oembed-viewer mb-2', 
+            data: { controller: 'arclight-oembed', 
+                    arclight_oembed_url_value: @resource.href }) do %>
+
+  <div class="al-digital-object">
+    <% omeka_url = @resource.href
+         .gsub('/omeka-s/iiif/3/', '/omeka-s/s/digital/item/')
+         .gsub('/manifest', '') %>
+
+    <%= link_to @resource.label, omeka_url, 
+                class: 'btn btn-outline-primary btn-sm' %>
+  </div>
+
+
+<% end %>
+

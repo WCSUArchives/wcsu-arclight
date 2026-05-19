@@ -1,0 +1,21 @@
+<div id="embed" class="mb-2">
+  <h2 class="al-show-sub-heading"><%= t('arclight.views.show.embedded_content') %></h2>
+
+  <%= render Arclight::OembedViewerComponent.with_collection(embeddable_resources, document: @document) %>
+
+  <% linked_resources.each do |resource| %>
+    <div class="al-digital-object mb-2">
+      <% 
+        href = resource.href.to_s
+        # Convert IIIF manifest URL to Omeka item page URL
+        if href.include?('/omeka-s/iiif/')
+          manifest_id = href.match(/iiif\/3\/(\d+)\/manifest/)&.[](1)
+          omeka_url = manifest_id ? "https://archives.library.wcsu.edu/omeka-s/s/digital/item/#{manifest_id}" : href
+        else
+          omeka_url = href
+        end
+      %>
+      <%= link_to(resource.label, omeka_url, class: "btn btn-outline-primary btn-sm") %>
+    </div>
+  <% end %>
+</div>
