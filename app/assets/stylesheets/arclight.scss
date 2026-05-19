@@ -1,0 +1,13 @@
+$breadcrumb-divider: quote("»");
+$logo-image: image_url('arclight/logo.png') !default;
+@import 'bootstrap';
+@import 'blacklight/blacklight';
+@import 'arclight/application';
+
+$theme-colors: (
+
+  "primary": #0074d9,
+  "danger": #ff4136
+
+);
+

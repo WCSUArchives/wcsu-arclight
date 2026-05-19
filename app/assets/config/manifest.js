@@ -1,0 +1,10 @@
+//= link_tree ../images
+//= link_tree ../stylesheets .css
+//= link application.css
+//= link blacklight/bookmark_toggle.js
+//= link blacklight/button_focus.js
+//= link application.js
+//= link controllers/application.js
+//= link controllers/hello_controller.js
+//= link controllers/index.js
+//= link blacklight/manifest.js
