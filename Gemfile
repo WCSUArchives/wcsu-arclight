@@ -8,6 +8,8 @@ gem 'sassc-rails'
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 7.0.4", ">= 7.0.4.2"
 
+#gem 'rails', '~> 7.2.0'
+
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"
 
@@ -16,6 +18,7 @@ gem "sqlite3", "~> 1.4"
 
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", "~> 5.0"
+#gem "puma", "~> 6.0"
 
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"
@@ -73,9 +76,9 @@ group :test do
   gem "webdrivers"
 end
 
-gem "arclight", git: "https://github.com/archivalGrysbok/arclight.git", branch: 'master'
+#gem "arclight", git: "https://github.com/archivalGrysbok/arclight.git", branch: 'master'
 
-#gem "arclight", "= 1.1.3"
+gem "arclight", "= 1.1.3"
 
 group :development, :test do
   gem "solr_wrapper", ">= 0.3"
