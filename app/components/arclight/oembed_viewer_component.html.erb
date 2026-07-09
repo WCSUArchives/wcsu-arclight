@@ -31,14 +31,14 @@
                     arclight_oembed_url_value: @resource.href }) do %>
 
   <div class="al-digital-object">
-    <% omeka_url = @resource.href
+    <% display_url = @resource.href
+         # CTDA: strip /iiif-p/manifest 
+         .gsub(%r{/iiif-p/manifest$}, '')
          .gsub('/omeka-s/iiif/3/', '/omeka-s/s/digital/item/')
-         .gsub('/manifest', '') %>
-
-    <%= link_to @resource.label, omeka_url, 
+         .gsub('/manifest', '')   %>
+    <%= link_to @resource.label, display_url, 
                 class: 'btn btn-outline-primary btn-sm' %>
   </div>
 
 
 <% end %>
-

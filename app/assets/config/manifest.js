@@ -8,3 +8,4 @@
 //= link controllers/hello_controller.js
 //= link controllers/index.js
 //= link blacklight/manifest.js
+//= link blacklight/debounce.js

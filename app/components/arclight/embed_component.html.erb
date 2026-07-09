@@ -7,15 +7,17 @@
     <div class="al-digital-object mb-2">
       <% 
         href = resource.href.to_s
-        # Convert IIIF manifest URL to Omeka item page URL
+        # Convert IIIF manifest URL to human-friendly page URL
         if href.include?('/omeka-s/iiif/')
           manifest_id = href.match(/iiif\/3\/(\d+)\/manifest/)&.[](1)
-          omeka_url = manifest_id ? "https://archives.library.wcsu.edu/omeka-s/s/digital/item/#{manifest_id}" : href
+          display_url = manifest_id ? "https://archives.library.wcsu.edu/omeka-s/s/digital/item/#{manifest_id}" : href
+        elsif href.include?('ctdigitalarchive.org') && href.include?('/iiif-p/manifest')
+          # CTDA: strip /iiif-p/manifest to get the object page
+          display_url = href.gsub('/iiif-p/manifest', '')
         else
-          omeka_url = href
+          display_url = href
         end
       %>
-      <%= link_to(resource.label, omeka_url, class: "btn btn-outline-primary btn-sm") %>
+      <%= link_to(resource.label, display_url, class: "btn btn-outline-primary btn-sm") %>
     </div>
-  <% end %>
-</div>
+<% end %>
