@@ -1,44 +1,110 @@
 <% manifest_url = @document['dado_identifier_ssm']&.first %>
 <% action = @document['dado_action_ssm']&.first %>
-
+<% direct_url = manifest_url&.gsub(/\/iiif-p\/manifest$/, '')&.gsub(/\/manifest$/, '') %>
 
 <% if action&.downcase == "embed" && manifest_url.present? %>
-  <div class="mirador-container mb-3" id="mirador-container" style="height: 600px; position: relative; overflow: hidden;"></div>
-<% end %>
+  <%# Wrapper: Mirador and overlay are siblings. Mirador cannot destroy the overlay. %>
+  <div class="mb-3" style="position: relative; height: 600px;">
+    <div id="mirador-container" style="height: 100%;"></div>
 
-
-<%= javascript_include_tag "https://unpkg.com/mirador@4/dist/mirador.min.js" %>
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const miradorContainer = document.getElementById('mirador-container');
-    if (!miradorContainer) return;
-
-    const viewer = Mirador.viewer({
-      id: 'mirador-container',
-      windows: [{
-        loadedManifest: '<%= manifest_url %>',
-        canvasIndex: 0
-      }]
-    });
-  });
-</script>
-
-
-<%# Override: Omeka link instead of IIIF %>
-
-<%= tag.div(class: 'al-oembed-viewer mb-2', 
-            data: { controller: 'arclight-oembed', 
-                    arclight_oembed_url_value: @resource.href }) do %>
-
-  <div class="al-digital-object">
-    <% display_url = @resource.href
-         # CTDA: strip /iiif-p/manifest 
-         .gsub(%r{/iiif-p/manifest$}, '')
-         .gsub('/omeka-s/iiif/3/', '/omeka-s/s/digital/item/')
-         .gsub('/manifest', '')   %>
-    <%= link_to @resource.label, display_url, 
-                class: 'btn btn-outline-primary btn-sm' %>
+    <div id="mirador-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: #f8f9fa; z-index: 10;">
+      <div id="mirador-overlay-content" style="text-align: center; color: #6c757d;">
+        <div class="spinner-border mb-3" role="status" style="width: 3rem; height: 3rem; display: block; margin-left: auto; margin-right: auto;">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <div>Loading image viewer...</div>
+      </div>
+    </div>
   </div>
 
+  <%= javascript_include_tag "https://unpkg.com/mirador@4/dist/mirador.min.js" %>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const manifestUrl = '<%= manifest_url %>';
 
+      try {
+        Mirador.viewer({
+          id: 'mirador-container',
+          windows: [{
+            loadedManifest: manifestUrl,
+            canvasIndex: 0
+          }]
+        });
+      } catch (e) {
+        console.error('Mirador initialization failed:', e);
+      }
+
+      // After 3 seconds: check if OpenSeadragon has rendered a canvas.
+      // If yes, the viewer loaded successfully (Omeka). Hide the overlay.
+      setTimeout(() => {
+        const hasCanvas = document.querySelector('#mirador-container canvas');
+        const overlay = document.getElementById('mirador-overlay');
+        if (hasCanvas && overlay) {
+          overlay.style.display = 'none';
+        }
+      }, 3000);
+
+      // After 10 seconds: if the overlay is still visible, either show the cute
+      // "still loading?" message or hide it if the canvas just appeared late.
+      setTimeout(() => {
+        const overlay = document.getElementById('mirador-overlay');
+        const content = document.getElementById('mirador-overlay-content');
+        if (!overlay || overlay.style.display === 'none') return;
+
+        // One last check: did the viewer just finish loading?
+        const hasCanvas = document.querySelector('#mirador-container canvas');
+        if (hasCanvas) {
+          overlay.style.display = 'none';
+          return;
+        }
+
+        // Show the cute "try refreshing" message
+        if (content) {
+          content.innerHTML =
+            '<div style="padding: 20px; max-width: 480px;">' +
+              '<div style="font-size: 2.5rem; margin-bottom: 15px;">🌀</div>' +
+              '<h5 style="color: #495057; margin-bottom: 12px;">Still loading?</h5>' +
+              '<p style="color: #6c757d; margin-bottom: 20px;">' +
+                'The image viewer is taking longer than expected to load. ' +
+                'For items hosted by our partner archive, you may need to visit the item page directly first to allow the server to verify your browser.' +
+              '</p>' +
+              '<div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">' +
+                '<button onclick="window.location.reload();" class="btn btn-primary btn-sm">' +
+                  '↻ Refresh this page' +
+                '</button>' +
+                '<a href="<%= direct_url %>" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener">' +
+                  'View item on partner site' +
+                '</a>' +
+              '</div>' +
+              '<p style="color: #adb5bd; font-size: 0.85em; margin-top: 15px;">' +
+                'This is a known issue and we are working on it. ' +
+                'If you visit the partner site, try refreshing this page afterward.' +
+              '</p>' +
+            '</div>';
+        }
+      }, 10000);
+    });
+  </script>
+<% end %>
+
+<% if action&.downcase == "embed" %>
+  <div class="al-oembed-viewer mb-2">
+    <div class="al-digital-object">
+      <% display_url = @resource.href
+           .gsub(%r{/iiif-p/manifest$}, '')
+           .gsub('/omeka-s/iiif/3/', '/omeka-s/s/digital/item/')
+           .gsub('/manifest', '') %>
+      <%= link_to @resource.label, display_url, class: 'btn btn-outline-primary btn-sm' %>
+    </div>
+  </div>
+<% else %>
+  <%= tag.div(class: 'al-oembed-viewer mb-2', data: { controller: 'arclight-oembed', arclight_oembed_url_value: @resource.href }) do %>
+    <div class="al-digital-object">
+      <% display_url = @resource.href
+           .gsub(%r{/iiif-p/manifest$}, '')
+           .gsub('/omeka-s/iiif/3/', '/omeka-s/s/digital/item/')
+           .gsub('/manifest', '') %>
+      <%= link_to @resource.label, display_url, class: 'btn btn-outline-primary btn-sm' %>
+    </div>
+  <% end %>
 <% end %>
