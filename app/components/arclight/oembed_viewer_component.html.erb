@@ -1,6 +1,5 @@
 <% manifest_url = @document['dado_identifier_ssm']&.first %>
 <% action = @document['dado_action_ssm']&.first %>
-<% direct_url = manifest_url&.gsub(/\/iiif-p\/manifest$/, '')&.gsub(/\/manifest$/, '') %>
 
 <% if action&.downcase == "embed" && manifest_url.present? %>
   <%# Wrapper: Mirador and overlay are siblings. Mirador cannot destroy the overlay. %>
@@ -80,6 +79,7 @@
       <% display_url = @resource.href
            .gsub(%r{/iiif-p/manifest$}, '')
            .gsub('/omeka-s/iiif/3/', '/omeka-s/s/digital/item/')
+           .gsub(%r{/manifests/(\d+)\.json$}, '/catalog/\1')  # <-- Yale: /manifests/ID.json → /catalog/ID
            .gsub('/manifest', '') %>
       <%= link_to @resource.label, display_url, class: 'btn btn-outline-primary btn-sm' %>
     </div>
@@ -87,10 +87,13 @@
 <% else %>
   <%= tag.div(class: 'al-oembed-viewer mb-2', data: { controller: 'arclight-oembed', arclight_oembed_url_value: @resource.href }) do %>
     <div class="al-digital-object">
-      <% display_url = @resource.href
-           .gsub(%r{/iiif-p/manifest$}, '')
-           .gsub('/omeka-s/iiif/3/', '/omeka-s/s/digital/item/')
-           .gsub('/manifest', '') %>
+
+	<% display_url = @resource.href
+	     .gsub(%r{/iiif-p/manifest$}, '')
+	     .gsub('/omeka-s/iiif/3/', '/omeka-s/s/digital/item/')
+	     .gsub(%r{/manifests/(\d+)\.json$}, '/catalog/\1')  # <-- Yale: /manifests/ID.json → /catalog/ID
+	     .gsub('/manifest', '') %>
+
       <%= link_to @resource.label, display_url, class: 'btn btn-outline-primary btn-sm' %>
     </div>
   <% end %>

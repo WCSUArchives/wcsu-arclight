@@ -5,19 +5,24 @@
 
   <% linked_resources.each do |resource| %>
     <div class="al-digital-object mb-2">
-      <% 
-        href = resource.href.to_s
-        # Convert IIIF manifest URL to human-friendly page URL
-        if href.include?('/omeka-s/iiif/')
-          manifest_id = href.match(/iiif\/3\/(\d+)\/manifest/)&.[](1)
-          display_url = manifest_id ? "https://archives.library.wcsu.edu/omeka-s/s/digital/item/#{manifest_id}" : href
-        elsif href.include?('ctdigitalarchive.org') && href.include?('/iiif-p/manifest')
-          # CTDA: strip /iiif-p/manifest to get the object page
-          display_url = href.gsub('/iiif-p/manifest', '')
-        else
-          display_url = href
-        end
-      %>
+
+
+	<%
+	  href = resource.href.to_s
+	  if href.include?('/omeka-s/iiif/')
+	    manifest_id = href.match(/iiif\/3\/(\d+)\/manifest/)&.[](1)
+	    display_url = manifest_id ? "https://archives.library.wcsu.edu/omeka-s/s/digital/item/#{manifest_id}" : href
+	  elsif href.include?('ctdigitalarchive.org') && href.include?('/iiif-p/manifest')
+	    display_url = href.gsub('/iiif-p/manifest', '')
+	  elsif href.include?('collections.library.yale.edu') && href.include?('/manifests/')
+	    # Yale: /manifests/ID.json → /catalog/ID
+	    yale_id = href.match(/\/manifests\/(\d+)\.json$/)&.[](1)
+	    display_url = yale_id ? "https://collections.library.yale.edu/catalog/#{yale_id}" : href
+	  else
+	    display_url = href
+	  end
+	%>
+
       <%= link_to(resource.label, display_url, class: "btn btn-outline-primary btn-sm") %>
     </div>
 <% end %>

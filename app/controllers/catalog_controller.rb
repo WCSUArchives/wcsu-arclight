@@ -352,7 +352,6 @@ class CatalogController < ApplicationController
     config.add_component_field 'phystech', field: 'phystech_html_tesm', helper_method: :render_html_tags
     config.add_component_field 'physloc', field: 'physloc_html_tesm', helper_method: :render_html_tags
 
-
     config.add_component_field 'odd_tesim', label: 'Notes', helper_method: :render_html_tags
     config.add_component_field 'accessrestrict_tesim', label: 'Access Restrictions', helper_method: :render_html_tags
     config.add_component_field 'altformavail_tesim', label: 'Alternate Form Available', helper_method: :render_html_tags
@@ -389,7 +388,21 @@ class CatalogController < ApplicationController
     config.add_component_field 'bibliography_ssm', label: 'Bibliography', helper_method: :render_html_tags
     config.add_component_field 'userestrict_ssm', label: 'User Restrictions', helper_method: :render_html_tags
 
+# In catalog_controller.rb
+config.add_component_field 'dado_title_tesm', label: 'Digital Object Title', helper_method: :render_html_tags
+config.add_component_field 'dado_description_tesim', label: 'Description', helper_method: :render_html_tags
+config.add_component_field 'dado_creator_ssim', label: 'Creator'
+config.add_component_field 'dado_date_ssim', label: 'Date'
+config.add_component_field 'dado_format_ssim', label: 'Format'
+config.add_component_field 'dado_subject_ssim', label: 'Subject', separator_options: { two_words_connector: '; ' }
+config.add_component_field 'dado_extent_tesm', label: 'Extent', helper_method: :render_html_tags
+config.add_component_field 'dado_abstract_tesm', label: 'Abstract', helper_method: :render_html_tags
 
+    config.add_indexed_terms_field 'dado_subject', field: 'dado_subject_ssim', link_to_facet: true, separator_options: {
+      words_connector: '<br/>',
+      two_words_connector: '<br/>',
+      last_word_connector: '<br/>'
+    }
 
     # Component Show Page - Indexed Terms Section
     config.add_component_indexed_terms_field 'access_subjects', field: 'access_subjects_ssim', link_to_facet: true, separator_options: {
@@ -437,4 +450,8 @@ class CatalogController < ApplicationController
     # Group header values
     config.add_group_header_field 'abstract_or_scope', accessor: true, truncate: true, helper_method: :render_html_tags
   end
+
+
+#Rails.logger.info "Component indexed terms fields: #{config.component_indexed_terms_fields.keys.inspect}"
+
 end
