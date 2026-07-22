@@ -366,7 +366,6 @@ class CatalogController < ApplicationController
     config.add_component_field 'userestrict_tesim', label: 'User Restrictions', helper_method: :render_html_tags
 
     config.add_component_field 'abstract_ssm', label: 'Abstract', helper_method: :render_html_tags
-    config.add_component_field 'extent_ssm', label: 'Extent'
     config.add_component_field 'scopecontent_ssm', label: 'Scope and Content', helper_method: :render_html_tags
     config.add_component_field 'appraisal_ssm', label: 'Appraisal information', helper_method: :render_html_tags
     config.add_component_field 'custodhist_ssm', label: 'Custodial history', helper_method: :render_html_tags
