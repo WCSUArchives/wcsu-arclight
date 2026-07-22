@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+
+# Define custom field group method for "Sourced from digital object" section
+Blacklight::Configuration.define_field_access :digitalObject_field, Blacklight::Configuration::ShowField
+
+
 # Blacklight controller that handles searches and document requests
 class CatalogController < ApplicationController
   include Blacklight::Catalog
@@ -387,17 +392,17 @@ class CatalogController < ApplicationController
     config.add_component_field 'bibliography_ssm', label: 'Bibliography', helper_method: :render_html_tags
     config.add_component_field 'userestrict_ssm', label: 'User Restrictions', helper_method: :render_html_tags
 
-# In catalog_controller.rb
-config.add_component_field 'dado_title_tesm', label: 'Digital Object Title', helper_method: :render_html_tags
-config.add_component_field 'dado_description_tesim', label: 'Description', helper_method: :render_html_tags
-config.add_component_field 'dado_creator_ssim', label: 'Creator'
-config.add_component_field 'dado_date_ssim', label: 'Date'
-config.add_component_field 'dado_format_ssim', label: 'Format'
-config.add_component_field 'dado_subject_ssim', label: 'Subject', separator_options: { two_words_connector: '; ' }
-config.add_component_field 'dado_extent_tesm', label: 'Extent', helper_method: :render_html_tags
-config.add_component_field 'dado_abstract_tesm', label: 'Abstract', helper_method: :render_html_tags
+# metadata from digital components
+config.add_digitalObject_field 'dado_title_tesm', label: 'Digital Object Title', helper_method: :render_html_tags
+config.add_digitalObject_field 'dado_description_tesim', label: 'Description', helper_method: :render_html_tags
+config.add_digitalObject_field 'dado_creator_ssim', label: 'Creator'
+config.add_digitalObject_field 'dado_date_ssim', label: 'Date'
+config.add_digitalObject_field 'dado_format_ssim', label: 'Format'
+config.add_digitalObject_field 'dado_subject_ssim', label: 'Subject', separator_options: { two_words_connector: '; ' }
+config.add_digitalObject_field 'dado_extent_tesm', label: 'Extent', helper_method: :render_html_tags
+config.add_digitalObject_field 'dado_abstract_tesm', label: 'Abstract', helper_method: :render_html_tags
 
-    config.add_indexed_terms_field 'dado_subject', field: 'dado_subject_ssim', link_to_facet: true, separator_options: {
+    config.add_component_terms_field 'dado_subject', field: 'dado_subject_ssim', link_to_facet: true, separator_options: {
       words_connector: '<br/>',
       two_words_connector: '<br/>',
       last_word_connector: '<br/>'
