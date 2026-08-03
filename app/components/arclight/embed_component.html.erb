@@ -1,35 +1,24 @@
+<%
+  valid_embeddable = embeddable_resources.select { |r| r.href.to_s.start_with?('http://', 'https://') }
+  valid_linked = linked_resources.select { |r| r.href.to_s.start_with?('http://', 'https://') }
+%>
+
+<% if valid_embeddable.any? || valid_linked.any? %>
 <div id="embed" class="mb-2">
   <h2 class="al-show-sub-heading"><%= t('arclight.views.show.embedded_content') %></h2>
 
-  <% probed_domains = ['collections.library.yale.edu', 'collections.ctdigitalarchive.org'] %>
+  <% valid_embeddable.each do |resource| %>
+    <% href = resource.href.to_s %>
+    <% iiif_patterns = ['/iiif/', '/manifests/', 'manifest.json', '/iiif-p/manifest'] %>
+    <% if iiif_patterns.none? { |p| href.include?(p) } %>
+      <%# Not a IIIF manifest — render as a plain link and skip viewer %>
+      <div class="al-digital-object mb-2">
+        <%= link_to resource.label, href, target: "_blank", class: "btn btn-outline-primary btn-sm" %>
+      </div>
+      <% next %>
+    <% end %>
 
-  <%
-    probed = []
-    unprobed = []
-    embeddable_resources.each do |r|
-      begin
-        host = URI.parse(r.href.to_s).host
-        if probed_domains.include?(host)
-          probed << r
-        else
-          unprobed << r
-        end
-      rescue URI::Error
-        unprobed << r
-      end
-    end
-  %>
-
-  <%# Safe domains — render normally via collection %>
-  <% if unprobed.any? %>
-    <%= render Arclight::OembedViewerComponent.with_collection(unprobed, document: @document) %>
-  <% end %>
-
-  <%# Potentially protected domains — render component but gate with probe overlay %>
-  <% probed.each do |resource| %>
     <%
-      href = resource.href.to_s
-      # Same display_url logic as linked_resources
       if href.include?('/omeka-s/iiif/')
         manifest_id = href.match(/iiif\/3\/(\d+)\/manifest/)&.[](1)
         display_url = manifest_id ? "https://archives.library.wcsu.edu/omeka-s/s/digital/item/#{manifest_id}" : href
@@ -41,31 +30,32 @@
       else
         display_url = href
       end
+      begin
+        domain = URI.parse(href).host || 'this site'
+      rescue URI::Error
+        domain = 'this site'
+      end
     %>
 
     <div class="mirador-probe-wrapper"
-         data-manifest-url="<%= href %>"
          data-display-url="<%= display_url %>"
-         data-domain="<%= URI.parse(href).host rescue 'this site' %>"
-         style="position: relative; min-height: 300px;">
+         data-domain="<%= domain %>">
 
-      <%# The viewer is rendered immediately but sits behind the overlay %>
       <div class="viewer-container">
-         <%= render Arclight::OembedViewerComponent.new(resource: resource, document: @document) %>
+        <%= render Arclight::OembedViewerComponent.new(resource: resource, document: @document) %>
       </div>
 
-      <%# Overlay: starts visible, removed on success, shows auth box on failure %>
-      <div class="probe-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 10; padding: 1rem;">
+      <div class="probe-overlay">
         <div class="probe-loading">
-          <div class="spinner-border spinner-border-sm" role="status"></div>
-          <span class="ms-2">Checking access to <%= URI.parse(href).host rescue 'this site' %>...</span>
+          <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+          <span class="ms-2">Loading viewer&hellip;</span>
         </div>
 
         <div class="probe-auth d-none">
           <div class="alert alert-info" role="alert">
             <h5 class="alert-heading">External Authentication Required</h5>
             <p>
-              This item is hosted by <strong><%= URI.parse(href).host rescue 'this site' %></strong>.
+              This item is hosted by <strong><%= domain %></strong>.
               Their security system requires a quick verification before the viewer can load.
             </p>
             <hr>
@@ -83,7 +73,7 @@
     </div>
   <% end %>
 
-  <% linked_resources.each do |resource| %>
+  <% valid_linked.each do |resource| %>
     <div class="al-digital-object mb-2">
       <%
         href = resource.href.to_s
@@ -99,35 +89,70 @@
           display_url = href
         end
       %>
-      <%= link_to(resource.label, display_url, class: "btn btn-outline-primary btn-sm") %>
+      <%= link_to resource.label, display_url, target: "_blank", class: "btn btn-outline-primary btn-sm" %>
     </div>
   <% end %>
+
 </div>
+<% end %>
+
+<style>
+  .mirador-probe-wrapper {
+    position: relative;
+    min-height: 300px;
+    margin-bottom: 1rem;
+  }
+  .probe-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: white;
+    z-index: 10;
+    padding: 1rem;
+    min-height: 300px;
+  }
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.mirador-probe-wrapper').forEach(function(wrapper) {
-    var manifestUrl = wrapper.dataset.manifestUrl;
     var displayUrl = wrapper.dataset.displayUrl;
+    var domain = wrapper.dataset.domain;
     var overlay = wrapper.querySelector('.probe-overlay');
     var loading = overlay.querySelector('.probe-loading');
     var auth = overlay.querySelector('.probe-auth');
 
-    fetch(manifestUrl, { method: 'GET', mode: 'cors' })
-      .then(function(resp) {
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        return resp.json();
-      })
-      .then(function(data) {
-        // Probe succeeded — user is authenticated or no challenge active
-        // Remove the overlay entirely; the viewer is already initialized underneath
-        overlay.remove();
-      })
-      .catch(function(err) {
-        // Probe failed — show auth box
-        loading.classList.add('d-none');
-        auth.classList.remove('d-none');
-      });
+    var resolved = false;
+
+    function showSuccess() {
+      if (resolved) return;
+      resolved = true;
+      overlay.remove();
+    }
+
+    function showAuthBox() {
+      if (resolved) return;
+      resolved = true;
+      loading.classList.add('d-none');
+      auth.classList.remove('d-none');
+    }
+
+    var checkInterval = setInterval(function() {
+      var success = wrapper.querySelector('.mirador-workspace-viewport, video');
+      var error = wrapper.querySelector('[role="alert"].MuiAlert-root');
+
+      if (success) {
+        clearInterval(checkInterval);
+        showSuccess();
+      } else if (error) {
+        clearInterval(checkInterval);
+        showAuthBox();
+      }
+    }, 300);
+
+    setTimeout(function() {
+      clearInterval(checkInterval);
+      showAuthBox();
+    }, 12000);
   });
 });
 </script>
