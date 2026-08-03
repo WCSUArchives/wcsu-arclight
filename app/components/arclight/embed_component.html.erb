@@ -1,28 +1,133 @@
 <div id="embed" class="mb-2">
   <h2 class="al-show-sub-heading"><%= t('arclight.views.show.embedded_content') %></h2>
 
-  <%= render Arclight::OembedViewerComponent.with_collection(embeddable_resources, document: @document) %>
+  <% probed_domains = ['collections.library.yale.edu', 'collections.ctdigitalarchive.org'] %>
+
+  <%
+    probed = []
+    unprobed = []
+    embeddable_resources.each do |r|
+      begin
+        host = URI.parse(r.href.to_s).host
+        if probed_domains.include?(host)
+          probed << r
+        else
+          unprobed << r
+        end
+      rescue URI::Error
+        unprobed << r
+      end
+    end
+  %>
+
+  <%# Safe domains — render normally via collection %>
+  <% if unprobed.any? %>
+    <%= render Arclight::OembedViewerComponent.with_collection(unprobed, document: @document) %>
+  <% end %>
+
+  <%# Potentially protected domains — render component but gate with probe overlay %>
+  <% probed.each do |resource| %>
+    <%
+      href = resource.href.to_s
+      # Same display_url logic as linked_resources
+      if href.include?('/omeka-s/iiif/')
+        manifest_id = href.match(/iiif\/3\/(\d+)\/manifest/)&.[](1)
+        display_url = manifest_id ? "https://archives.library.wcsu.edu/omeka-s/s/digital/item/#{manifest_id}" : href
+      elsif href.include?('ctdigitalarchive.org') && href.include?('/iiif-p/manifest')
+        display_url = href.gsub('/iiif-p/manifest', '')
+      elsif href.include?('collections.library.yale.edu') && href.include?('/manifests/')
+        yale_id = href.match(/\/manifests\/(\d+)\.json$/)&.[](1)
+        display_url = yale_id ? "https://collections.library.yale.edu/catalog/#{yale_id}" : href
+      else
+        display_url = href
+      end
+    %>
+
+    <div class="mirador-probe-wrapper"
+         data-manifest-url="<%= href %>"
+         data-display-url="<%= display_url %>"
+         data-domain="<%= URI.parse(href).host rescue 'this site' %>"
+         style="position: relative; min-height: 300px;">
+
+      <%# The viewer is rendered immediately but sits behind the overlay %>
+      <div class="viewer-container">
+         <%= render Arclight::OembedViewerComponent.new(resource: resource, document: @document) %>
+      </div>
+
+      <%# Overlay: starts visible, removed on success, shows auth box on failure %>
+      <div class="probe-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 10; padding: 1rem;">
+        <div class="probe-loading">
+          <div class="spinner-border spinner-border-sm" role="status"></div>
+          <span class="ms-2">Checking access to <%= URI.parse(href).host rescue 'this site' %>...</span>
+        </div>
+
+        <div class="probe-auth d-none">
+          <div class="alert alert-info" role="alert">
+            <h5 class="alert-heading">External Authentication Required</h5>
+            <p>
+              This item is hosted by <strong><%= URI.parse(href).host rescue 'this site' %></strong>.
+              Their security system requires a quick verification before the viewer can load.
+            </p>
+            <hr>
+            <p class="mb-0">
+              <a href="<%= display_url %>" target="_blank" class="btn btn-primary btn-sm">
+                Click here to verify and open this item
+              </a>
+            </p>
+            <p class="mt-2 mb-0 small text-muted">
+              After verifying, return to this page and <strong>refresh</strong> to load the viewer.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
 
   <% linked_resources.each do |resource| %>
     <div class="al-digital-object mb-2">
-
-
-	<%
-	  href = resource.href.to_s
-	  if href.include?('/omeka-s/iiif/')
-	    manifest_id = href.match(/iiif\/3\/(\d+)\/manifest/)&.[](1)
-	    display_url = manifest_id ? "https://archives.library.wcsu.edu/omeka-s/s/digital/item/#{manifest_id}" : href
-	  elsif href.include?('ctdigitalarchive.org') && href.include?('/iiif-p/manifest')
-	    display_url = href.gsub('/iiif-p/manifest', '')
-	  elsif href.include?('collections.library.yale.edu') && href.include?('/manifests/')
-	    # Yale: /manifests/ID.json → /catalog/ID
-	    yale_id = href.match(/\/manifests\/(\d+)\.json$/)&.[](1)
-	    display_url = yale_id ? "https://collections.library.yale.edu/catalog/#{yale_id}" : href
-	  else
-	    display_url = href
-	  end
-	%>
-
+      <%
+        href = resource.href.to_s
+        if href.include?('/omeka-s/iiif/')
+          manifest_id = href.match(/iiif\/3\/(\d+)\/manifest/)&.[](1)
+          display_url = manifest_id ? "https://archives.library.wcsu.edu/omeka-s/s/digital/item/#{manifest_id}" : href
+        elsif href.include?('ctdigitalarchive.org') && href.include?('/iiif-p/manifest')
+          display_url = href.gsub('/iiif-p/manifest', '')
+        elsif href.include?('collections.library.yale.edu') && href.include?('/manifests/')
+          yale_id = href.match(/\/manifests\/(\d+)\.json$/)&.[](1)
+          display_url = yale_id ? "https://collections.library.yale.edu/catalog/#{yale_id}" : href
+        else
+          display_url = href
+        end
+      %>
       <%= link_to(resource.label, display_url, class: "btn btn-outline-primary btn-sm") %>
     </div>
-<% end %>
+  <% end %>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.mirador-probe-wrapper').forEach(function(wrapper) {
+    var manifestUrl = wrapper.dataset.manifestUrl;
+    var displayUrl = wrapper.dataset.displayUrl;
+    var overlay = wrapper.querySelector('.probe-overlay');
+    var loading = overlay.querySelector('.probe-loading');
+    var auth = overlay.querySelector('.probe-auth');
+
+    fetch(manifestUrl, { method: 'GET', mode: 'cors' })
+      .then(function(resp) {
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return resp.json();
+      })
+      .then(function(data) {
+        // Probe succeeded — user is authenticated or no challenge active
+        // Remove the overlay entirely; the viewer is already initialized underneath
+        overlay.remove();
+      })
+      .catch(function(err) {
+        // Probe failed — show auth box
+        loading.classList.add('d-none');
+        auth.classList.remove('d-none');
+      });
+  });
+});
+</script>
