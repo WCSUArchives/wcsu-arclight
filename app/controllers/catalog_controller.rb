@@ -414,11 +414,11 @@ config.add_digitalObject_field 'dado_subject_ssim', label: 'Subject', separator_
 config.add_digitalObject_field 'dado_extent_tesm', label: 'Extent', helper_method: :render_html_tags
 config.add_digitalObject_field 'dado_abstract_tesm', label: 'Abstract', helper_method: :render_html_tags
 
-    config.add_component_terms_field 'dado_subject', field: 'dado_subject_ssim', link_to_facet: true, separator_options: {
-      words_connector: '<br/>',
-      two_words_connector: '<br/>',
-      last_word_connector: '<br/>'
-    }
+#    config.add_component_terms_field 'dado_subject', field: 'dado_subject_ssim', link_to_facet: true, separator_options: {
+#      words_connector: '<br/>',
+#      two_words_connector: '<br/>',
+#      last_word_connector: '<br/>'
+#    }
 
     # Component Show Page - Indexed Terms Section
 
