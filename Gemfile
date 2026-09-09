@@ -1,14 +1,12 @@
 source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby "3.1.4"
+ruby "3.2.3"
 
 gem 'sassc-rails'
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "rails", "~> 7.0.4", ">= 7.0.4.2"
-
-#gem 'rails', '~> 7.2.0'
+gem 'rails', '~> 8.1.0'
 
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"
@@ -80,7 +78,7 @@ end
 
 #gem "arclight", git: "https://github.com/archivalGrysbok/arclight.git", branch: 'master'
 
-gem "arclight", "= 1.1.3"
+gem "arclight", "= 1.6.3"
 
 group :development, :test do
   gem "solr_wrapper", ">= 0.3"
