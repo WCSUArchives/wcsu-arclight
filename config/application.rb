@@ -11,7 +11,9 @@ module Arclight101
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 7.0
 
-    config.relative_url_root = "/arclight" #used for assets
+    config.assets.prefix = "/assets"
+
+    config.relative_url_root = "/caoSearch" #used for assets
 
     # Configuration for the application, engines, and railties goes here.
     #
