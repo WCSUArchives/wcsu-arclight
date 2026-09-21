@@ -3,7 +3,7 @@ require "active_support/core_ext/integer/time"
 Rails.application.configure do
 
 
-  config.relative_url_root = "/caoSearch"
+#  config.relative_url_root = "/caoSearch"
 
   # Settings specified here will take precedence over those in config/application.rb.
 

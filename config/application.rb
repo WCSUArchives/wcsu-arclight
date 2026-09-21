@@ -13,7 +13,7 @@ module Arclight101
 
     config.assets.prefix = "/assets"
 
-    config.relative_url_root = "/caoSearch" #used for assets
+#    config.relative_url_root = "/caoSearch" #used for assets
 
     # Configuration for the application, engines, and railties goes here.
     #

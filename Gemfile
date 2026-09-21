@@ -60,7 +60,7 @@ gem 'blacklight', '~> 8.1'
 
 #gem "arclight", git: "https://github.com/archivalGrysbok/arclight.git", branch: 'master'
 
-gem "arclight", "= 1.3"
+gem "arclight", "= 1.6"
 
 gem "rsolr", ">= 1.0", "< 3"
 gem "bootstrap", "\~\>\ 5.1"

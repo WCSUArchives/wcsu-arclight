@@ -1,21 +1,9 @@
 # frozen_string_literal: true
 
-
-# Define custom field group method for "Sourced from digital object" section
-Blacklight::Configuration.define_field_access :digitalObject_field, Blacklight::Configuration::ShowField
-
-
 # Blacklight controller that handles searches and document requests
 class CatalogController < ApplicationController
   include Blacklight::Catalog
   include Arclight::Catalog
-  include BlacklightRangeLimit::ControllerOverride
-
-
-
-  rescue_from Blacklight::Exceptions::RecordNotFound do
-    render 'record_not_found', status: 404
-  end
 
   configure_blacklight do |config|
     ## Class for sending and receiving requests from a search index
@@ -151,27 +139,13 @@ class CatalogController < ApplicationController
     #  (note: It is case sensitive when searching values)
 
     config.add_facet_field 'collection', field: 'collection_ssim', limit: 10
-    config.add_facet_field 'creator', field: 'creator_ssim', limit: 10
-#    config.add_facet_field 'date_range', field: 'date_range_ssim', range: true
-
-    config.add_facet_field 'date_range', field: 'date_range_isim',
-                                         range: {
-                                           chart_js: false,
-                                           slider_js: false,
-                                           num_segments: 3,
-                                           # assumed_boundaries: [1100, Time.now.year + 2],
-                                           maxlength: 4
-                                         }
-
-
+    config.add_facet_field 'creators', field: 'creator_ssim', limit: 10
+    config.add_facet_field 'date_range', field: 'date_range_isim', range: true
     config.add_facet_field 'level', field: 'level_ssim', limit: 10
     config.add_facet_field 'names', field: 'names_ssim', limit: 10
     config.add_facet_field 'repository', field: 'repository_ssim', limit: 10
-    config.add_facet_field 'unicorn', field: 'repo_id_ssi', limit: 10
-    config.add_facet_field 'place', field: 'geogname_ssim', limit: 10
-#    config.add_facet_field 'subject', field: 'access_subjects_ssim', limit: 10
+    config.add_facet_field 'places', field: 'geogname_ssim', limit: 10
     config.add_facet_field 'access_subjects', field: 'access_subjects_ssim', limit: 10
-    config.add_facet_field 'genreform', field: 'genreform_ssim', limit: 10
 
     # Have BL send all facet field names to Solr, which has been the default
     # previously. Simply remove these lines if you'd rather use Solr request
@@ -257,6 +231,20 @@ class CatalogController < ApplicationController
         pf:  '${pf_title}'
       }
     end
+    config.add_search_field 'container', label: 'Container' do |field|
+      field.qt = 'search'
+      field.solr_parameters = {
+        qf:  '${qf_container}',
+        pf:  '${pf_container}'
+      }
+    end
+    config.add_search_field 'identifier', label: 'Identifier' do |field|
+      field.qt = 'search'
+      field.solr_parameters = {
+        qf:  '${qf_identifier}',
+        pf:  '${pf_identifier}'
+      }
+    end
 
     # These are the parameters passed through in search_state.params_for_search
     config.search_state_fields += %i[id group hierarchy_context original_document]
@@ -288,8 +276,7 @@ class CatalogController < ApplicationController
     # ===========================
 
     # Collection Show Page - Summary Section
-    config.add_summary_field 'creator', field: 'creators_ssim', link_to_facet: true
-#    config.add_summary_field 'creators', field: 'creators_ssim', link_to_facet: true
+    config.add_summary_field 'creators', field: 'creator_ssim', link_to_facet: true
     config.add_summary_field 'abstract', field: 'abstract_html_tesm', helper_method: :render_html_tags
     config.add_summary_field 'extent', field: 'extent_ssm'
     config.add_summary_field 'language', field: 'language_ssim'
@@ -306,8 +293,13 @@ class CatalogController < ApplicationController
     config.add_background_field 'accruals', field: 'accruals_html_tesm', helper_method: :render_html_tags
     config.add_background_field 'phystech', field: 'phystech_html_tesm', helper_method: :render_html_tags
     config.add_background_field 'physloc', field: 'physloc_html_tesm', helper_method: :render_html_tags
+    config.add_background_field 'physdesc', field: 'physdesc_tesim', helper_method: :render_html_tags
+    config.add_background_field 'physfacet', field: 'physfacet_tesim', helper_method: :render_html_tags
+    config.add_background_field 'dimensions', field: 'dimensions_tesim', helper_method: :render_html_tags
+    config.add_background_field 'materialspec', field: 'materialspec_html_tesm', helper_method: :render_html_tags
+    config.add_background_field 'fileplan', field: 'fileplan_html_tesm', helper_method: :render_html_tags
     config.add_background_field 'descrules', field: 'descrules_ssm', helper_method: :render_html_tags
-    config.add_background_field 'notes', field: 'odd_tesim', helper_method: :render_html_tags
+    config.add_background_field 'note', field: 'note_html_tesm', helper_method: :render_html_tags
 
     # Collection Show Page - Related Section
     config.add_related_field 'relatedmaterial', field: 'relatedmaterial_html_tesm', helper_method: :render_html_tags
@@ -315,17 +307,9 @@ class CatalogController < ApplicationController
     config.add_related_field 'otherfindaid', field: 'otherfindaid_html_tesm', helper_method: :render_html_tags
     config.add_related_field 'altformavail', field: 'altformavail_html_tesm', helper_method: :render_html_tags
     config.add_related_field 'originalsloc', field: 'originalsloc_html_tesm', helper_method: :render_html_tags
+    config.add_related_field 'odd', field: 'odd_html_tesm', helper_method: :render_html_tags
 
     # Collection Show Page - Indexed Terms Section
-config.add_indexed_terms_field 'genreform', field: 'genreform_ssim',
-                                             link_to_facet: true, separator_options: {
-  words_connector: '<br/>',
-  two_words_connector: '<br/>',
-  last_word_connector: '<br/>'
-}
-
-
-
     config.add_indexed_terms_field 'access_subjects', field: 'access_subjects_ssim', link_to_facet: true, separator_options: {
       words_connector: '<br/>',
       two_words_connector: '<br/>',
@@ -344,6 +328,9 @@ config.add_indexed_terms_field 'genreform', field: 'genreform_ssim',
       last_word_connector: '<br/>'
     }
 
+    config.add_indexed_terms_field 'indexes', field: 'indexes_html_tesm',
+                                              helper_method: :render_html_tags
+
     # ==========================
     # COMPONENT SHOW PAGE FIELDS
     # ==========================
@@ -356,80 +343,34 @@ config.add_indexed_terms_field 'genreform', field: 'genreform_ssim',
     }, if: lambda { |_context, _field_config, document|
       document.containers.present?
     }
+    config.add_component_field 'creators', field: 'creator_ssim', link_to_facet: true
     config.add_component_field 'abstract', field: 'abstract_html_tesm', helper_method: :render_html_tags
     config.add_component_field 'extent', field: 'extent_ssm'
     config.add_component_field 'scopecontent', field: 'scopecontent_html_tesm', helper_method: :render_html_tags
+    config.add_component_field 'language', field: 'language_ssim'
     config.add_component_field 'acqinfo', field: 'acqinfo_ssim', helper_method: :render_html_tags
+    config.add_component_field 'bioghist', field: 'bioghist_html_tesm', helper_method: :render_html_tags
     config.add_component_field 'appraisal', field: 'appraisal_html_tesm', helper_method: :render_html_tags
     config.add_component_field 'custodhist', field: 'custodhist_html_tesm', helper_method: :render_html_tags
     config.add_component_field 'processinfo', field: 'processinfo_html_tesm', helper_method: :render_html_tags
     config.add_component_field 'arrangement', field: 'arrangement_html_tesm', helper_method: :render_html_tags
     config.add_component_field 'accruals', field: 'accruals_html_tesm', helper_method: :render_html_tags
     config.add_component_field 'phystech', field: 'phystech_html_tesm', helper_method: :render_html_tags
+    config.add_component_field 'materialspec', field: 'materialspec_html_tesm', helper_method: :render_html_tags
     config.add_component_field 'physloc', field: 'physloc_html_tesm', helper_method: :render_html_tags
-
-    config.add_component_field 'odd_tesim', label: 'Notes', helper_method: :render_html_tags
-    config.add_component_field 'accessrestrict_tesim', label: 'Access Restrictions', helper_method: :render_html_tags
-    config.add_component_field 'altformavail_tesim', label: 'Alternate Form Available', helper_method: :render_html_tags
-    config.add_component_field 'bioghist_tesim', label: 'Biographical History', helper_method: :render_html_tags
-    config.add_component_field 'fileplan_tesim', label: 'Fileplan', helper_method: :render_html_tags
-    config.add_component_field 'note_tesim', label: 'Notes', helper_method: :render_html_tags
-    config.add_component_field 'originalsloc_tesim', label: 'Original Location', helper_method: :render_html_tags
-    config.add_component_field 'prefercite_tesim', label: 'Prefered Citation', helper_method: :render_html_tags
-    config.add_component_field 'relatedmaterial_tesim', label: 'Related Material', helper_method: :render_html_tags
-    config.add_component_field 'separatedmaterial_tesim', label: 'Separated Materials', helper_method: :render_html_tags
-    config.add_component_field 'bibliography_tesim', label: 'Bibliography', helper_method: :render_html_tags
-    config.add_component_field 'userestrict_tesim', label: 'User Restrictions', helper_method: :render_html_tags
-
-    config.add_component_field 'abstract_ssm', label: 'Abstract', helper_method: :render_html_tags
-    config.add_component_field 'scopecontent_ssm', label: 'Scope and Content', helper_method: :render_html_tags
-    config.add_component_field 'appraisal_ssm', label: 'Appraisal information', helper_method: :render_html_tags
-    config.add_component_field 'custodhist_ssm', label: 'Custodial history', helper_method: :render_html_tags
-    config.add_component_field 'processinfo_ssm', label: 'Processing information', helper_method: :render_html_tags
-    config.add_component_field 'arrangement_ssm', label: 'Arrangement', helper_method: :render_html_tags
-    config.add_component_field 'accruals_ssm', label: 'Accruals', helper_method: :render_html_tags
-    config.add_component_field 'phystech_ssm', label: 'Physical / technical requirements', helper_method: :render_html_tags
-#    config.add_component_field 'physloc_ssm', label: 'Physical location', helper_method: :render_html_tags
-    config.add_component_field 'odd_ssm', label: 'Notes', helper_method: :render_html_tags
-    config.add_component_field 'accessrestrict_ssm', label: 'Access Restrictions', helper_method: :render_html_tags
-    config.add_component_field 'altformavail_ssm', label: 'Alternate Form Available', helper_method: :render_html_tags
-    config.add_component_field 'bioghist_ssm', label: 'Biographical History', helper_method: :render_html_tags
-    config.add_component_field 'fileplan_ssm', label: 'Fileplan', helper_method: :render_html_tags
-    config.add_component_field 'note_ssm', label: 'Notes', helper_method: :render_html_tags
-    config.add_component_field 'originalsloc_ssm', label: 'Original Location', helper_method: :render_html_tags
-    config.add_component_field 'prefercite_ssm', label: 'Prefered Citation', helper_method: :render_html_tags
-    config.add_component_field 'relatedmaterial_ssm', label: 'Related Material', helper_method: :render_html_tags
-    config.add_component_field 'separatedmaterial_ssm', label: 'Separated Materials', helper_method: :render_html_tags
-    config.add_component_field 'bibliography_ssm', label: 'Bibliography', helper_method: :render_html_tags
-    config.add_component_field 'userestrict_ssm', label: 'User Restrictions', helper_method: :render_html_tags
-
-
-# metadata from digital components
-config.add_digitalObject_field 'dado_title_tesm', label: 'Digital Object Title', helper_method: :render_html_tags
-config.add_digitalObject_field 'dado_description_tesim', label: 'Description', helper_method: :render_html_tags
-config.add_digitalObject_field 'dado_creator_ssim', label: 'Creator'
-config.add_digitalObject_field 'dado_date_ssim', label: 'Date'
-config.add_digitalObject_field 'dado_format_ssim', label: 'Format'
-config.add_digitalObject_field 'dado_subject_ssim', label: 'Subject', separator_options: { two_words_connector: '; ' }
-config.add_digitalObject_field 'dado_extent_tesm', label: 'Extent', helper_method: :render_html_tags
-config.add_digitalObject_field 'dado_abstract_tesm', label: 'Abstract', helper_method: :render_html_tags
-
-#    config.add_component_terms_field 'dado_subject', field: 'dado_subject_ssim', link_to_facet: true, separator_options: {
-#      words_connector: '<br/>',
-#      two_words_connector: '<br/>',
-#      last_word_connector: '<br/>'
-#    }
+    config.add_component_field 'physdesc', field: 'physdesc_tesim', helper_method: :render_html_tags
+    config.add_component_field 'physfacet', field: 'physfacet_tesim', helper_method: :render_html_tags
+    config.add_component_field 'dimensions', field: 'dimensions_tesim', helper_method: :render_html_tags
+    config.add_component_field 'fileplan', field: 'fileplan_html_tesm', helper_method: :render_html_tags
+    config.add_component_field 'altformavail', field: 'altformavail_html_tesm', helper_method: :render_html_tags
+    config.add_component_field 'otherfindaid', field: 'otherfindaid_html_tesm', helper_method: :render_html_tags
+    config.add_component_field 'odd', field: 'odd_html_tesm', helper_method: :render_html_tags
+    config.add_component_field 'relatedmaterial', field: 'relatedmaterial_html_tesm', helper_method: :render_html_tags
+    config.add_component_field 'separatedmaterial', field: 'separatedmaterial_html_tesm', helper_method: :render_html_tags
+    config.add_component_field 'originalsloc', field: 'originalsloc_html_tesm', helper_method: :render_html_tags
+    config.add_component_field 'note', field: 'note_html_tesm', helper_method: :render_html_tags
 
     # Component Show Page - Indexed Terms Section
-
-config.add_component_indexed_terms_field 'genreform', field: 'genreform_ssim',
-                                                       link_to_facet: true, separator_options: {
-  words_connector: '<br/>',
-  two_words_connector: '<br/>',
-  last_word_connector: '<br/>'
-}
-
-
     config.add_component_indexed_terms_field 'access_subjects', field: 'access_subjects_ssim', link_to_facet: true, separator_options: {
       words_connector: '<br/>',
       two_words_connector: '<br/>',
@@ -447,6 +388,9 @@ config.add_component_indexed_terms_field 'genreform', field: 'genreform_ssim',
       two_words_connector: '<br/>',
       last_word_connector: '<br/>'
     }
+
+    config.add_component_indexed_terms_field 'indexes', field: 'indexes_html_tesm',
+                                              helper_method: :render_html_tags
 
     # =================
     # ACCESS TAB FIELDS
@@ -475,8 +419,4 @@ config.add_component_indexed_terms_field 'genreform', field: 'genreform_ssim',
     # Group header values
     config.add_group_header_field 'abstract_or_scope', accessor: true, truncate: true, helper_method: :render_html_tags
   end
-
-
-#Rails.logger.info "Component indexed terms fields: #{config.component_indexed_terms_fields.keys.inspect}"
-
 end
