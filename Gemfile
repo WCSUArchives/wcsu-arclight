@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-gem 'json', '= 2.10.1'
+gem 'json', '= 2.19.9'
 
 
 ruby "3.2.3"
