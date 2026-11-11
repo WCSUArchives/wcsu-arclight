@@ -9,3 +9,5 @@
 //= link controllers/index.js
 //= link blacklight/manifest.js
 //= link blacklight/debounce.js
+//= link_tree ../../javascript .js
+//= link_tree ../../../vendor/javascript .js

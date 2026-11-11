@@ -1,13 +1,11 @@
-# frozen_string_literal: true
-
 module Arclight
   # Render digital object links for a document
   class EmbedComponent < ViewComponent::Base
-    def initialize(document:, presenter:, **kwargs)
-      super
-
+    def initialize(document:, presenter: nil, **kwargs)
       @document = document
       @presenter = presenter
+      @blacklight_config = kwargs[:blacklight_config]
+      super()
     end
 
     def render?
@@ -23,21 +21,23 @@ module Arclight
     end
 
     def resources
-      @resources ||= @document.digital_objects || []
+      @resources ||= begin
+        return [] unless @document.respond_to?(:digital_objects)
+        @document.digital_objects || []
+      end
     end
 
     def depth
-      @document.parents.length || 0
+      return 0 unless @document.respond_to?(:parents)
+      @document.parents&.length || 0
     end
 
     def embeddable?(object)
-      exclude_patterns.none? do |pattern|
-        object.href =~ pattern
-      end
+      exclude_patterns.none? { |pattern| object.href =~ pattern }
     end
 
     def exclude_patterns
       Arclight::Engine.config.oembed_resource_exclude_patterns
     end
   end
-end
+end	
